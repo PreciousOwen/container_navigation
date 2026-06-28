@@ -8,9 +8,9 @@ This Django service receives raw prototype sensor data and exposes an authentica
 |---|---|---|---|
 | `GET` | `/sensor_data/` | Human-readable monitoring page | None |
 | `POST` | `/sensor_data/` | Temporary legacy raw sensor receiver | None |
-| `POST` | `/api/v1/gps/readings/` | Receive validated GPS data | Device bearer token |
-| `GET` | `/api/v1/gps/readings/latest/` | Retrieve a device's latest position | Management bearer token |
-| `GET` | `/api/v1/gps/readings/` | Synchronize GPS route history | Management bearer token |
+| `POST` | `/api/v1/gps/readings/` | Receive validated GPS data | Optional; configurable |
+| `GET` | `/api/v1/gps/readings/latest/` | Retrieve a device's latest position | Optional; configurable |
+| `GET` | `/api/v1/gps/readings/` | Synchronize GPS route history | Optional; configurable |
 
 Production base URL:
 
@@ -28,6 +28,7 @@ Required production variables:
 DJANGO_SECRET_KEY=<long-random-value>
 GPS_DEVICE_API_TOKEN=<device-secret>
 GPS_MANAGEMENT_API_TOKEN=<different-management-secret>
+GPS_REQUIRE_API_AUTH=True
 ```
 
 Generate secrets, for example:
@@ -36,7 +37,8 @@ Generate secrets, for example:
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-The API fails with HTTP `503` if its required token is not configured.
+When authentication is enabled, the API fails with HTTP `503` if its required
+token is not configured.
 
 ## Local setup
 
@@ -46,20 +48,20 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 export DJANGO_DEBUG=True
-export GPS_DEVICE_API_TOKEN=device-development-secret
-export GPS_MANAGEMENT_API_TOKEN=management-development-secret
 python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
 Open `http://127.0.0.1:8000/sensor_data/`.
 
+Authentication is disabled by default for the local prototype. Production
+should set `GPS_REQUIRE_API_AUTH=True` and configure both tokens.
+
 ## Submit structured GPS data
 
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/v1/gps/readings/" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer device-development-secret" \
   -d '{
     "device_id": "GPS-PROTOTYPE-001",
     "latitude": -6.783814,
@@ -77,18 +79,22 @@ curl -X POST "http://127.0.0.1:8000/api/v1/gps/readings/" \
 
 The pair `device_id + sequence_number` is unique. Resending the same transmission returns the existing record with `"duplicate": true`.
 
+For the single-device prototype, `device_id` may be omitted. The server then
+uses `GPS_PROTOTYPE_DEVICE_ID`, which defaults to `GPS-PROTOTYPE-001`.
+
+The latest-position and history GET endpoints use the same default when their
+`device_id` query parameter is omitted.
+
 ## Retrieve the latest position
 
 ```bash
-curl "http://127.0.0.1:8000/api/v1/gps/readings/latest/?device_id=GPS-PROTOTYPE-001" \
-  -H "Authorization: Bearer management-development-secret"
+curl "http://127.0.0.1:8000/api/v1/gps/readings/latest/?device_id=GPS-PROTOTYPE-001"
 ```
 
 ## Synchronize route history
 
 ```bash
-curl "http://127.0.0.1:8000/api/v1/gps/readings/?device_id=GPS-PROTOTYPE-001&after_id=0&limit=100" \
-  -H "Authorization: Bearer management-development-secret"
+curl "http://127.0.0.1:8000/api/v1/gps/readings/?device_id=GPS-PROTOTYPE-001&after_id=0&limit=100"
 ```
 
 Store the returned `last_id` in the management system and use it as the next request's `after_id`.

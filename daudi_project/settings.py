@@ -16,9 +16,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
-DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in {"1", "true", "yes", "on"}
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {"1", "true", "yes", "on"}
 
-if (DEBUG or "test" in sys.argv) and not SECRET_KEY:
+# Make local development commands usable without weakening production. Gunicorn
+# and other production WSGI/ASGI processes still require DJANGO_SECRET_KEY.
+IS_LOCAL_COMMAND = any(command in sys.argv for command in ("runserver", "test"))
+if (DEBUG or IS_LOCAL_COMMAND) and not SECRET_KEY:
     SECRET_KEY = "django-insecure-dev-only-change-me"
 
 ALLOWED_HOSTS = [
@@ -149,6 +152,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # fails closed when either token is empty.
 GPS_DEVICE_API_TOKEN = os.environ.get("GPS_DEVICE_API_TOKEN", "")
 GPS_MANAGEMENT_API_TOKEN = os.environ.get("GPS_MANAGEMENT_API_TOKEN", "")
+GPS_REQUIRE_API_AUTH = os.environ.get(
+    "GPS_REQUIRE_API_AUTH", "False"
+).lower() in {"1", "true", "yes", "on"}
 GPS_PROTOTYPE_DEVICE_ID = os.environ.get(
     "GPS_PROTOTYPE_DEVICE_ID", "GPS-PROTOTYPE-001"
 )

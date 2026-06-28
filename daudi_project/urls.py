@@ -16,10 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.views.generic import RedirectView
 
 from sensors.views import gps_latest, gps_readings, sensor_data
 
 urlpatterns = [
+    path("", RedirectView.as_view(pattern_name="sensor_data", permanent=False)),
     path("admin/", admin.site.urls),
     path("sensor_data/", sensor_data, name="sensor_data"),
     path("api/v1/gps/readings/", gps_readings, name="gps_readings"),

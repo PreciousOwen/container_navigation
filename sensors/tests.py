@@ -9,6 +9,7 @@ from .models import GPSReading, SensorData
 
 @override_settings(
 	SECRET_KEY="test-only-secret-key",
+	GPS_REQUIRE_API_AUTH=True,
 	GPS_DEVICE_API_TOKEN="device-test-secret",
 	GPS_MANAGEMENT_API_TOKEN="management-test-secret",
 	GPS_PROTOTYPE_DEVICE_ID="GPS-PROTOTYPE-001",
@@ -56,6 +57,16 @@ class GPSAPITests(TestCase):
 		reading = GPSReading.objects.get()
 		self.assertEqual(str(reading.latitude), "-6.7838140")
 		self.assertEqual(reading.sequence_number, 105)
+
+	def test_missing_device_id_uses_prototype_device(self):
+		payload = dict(self.valid_payload)
+		payload.pop("device_id")
+
+		response = self.post_gps(payload)
+
+		self.assertEqual(response.status_code, 201)
+		self.assertEqual(response.json()["device_id"], "GPS-PROTOTYPE-001")
+		self.assertEqual(GPSReading.objects.get().device_id, "GPS-PROTOTYPE-001")
 
 	def test_post_requires_device_token(self):
 		response = self.post_gps(**{"HTTP_AUTHORIZATION": "Bearer wrong"})
@@ -119,6 +130,20 @@ class GPSAPITests(TestCase):
 
 		self.assertEqual(response.status_code, 404)
 
+	def test_latest_without_device_id_uses_prototype_device(self):
+		created = self.post_gps().json()
+
+		response = self.client.get(
+			reverse("gps_latest"),
+			**self.management_headers,
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.json()["data"]["id"], created["id"])
+		self.assertEqual(
+			response.json()["data"]["device_id"], "GPS-PROTOTYPE-001"
+		)
+
 	def test_history_filters_after_id_and_reports_more(self):
 		ids = []
 		for sequence in range(1, 4):
@@ -148,6 +173,17 @@ class GPSAPITests(TestCase):
 		)
 
 		self.assertEqual(response.status_code, 401)
+
+	def test_history_without_device_id_uses_prototype_device(self):
+		created = self.post_gps().json()
+
+		response = self.client.get(
+			reverse("gps_readings"),
+			**self.management_headers,
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.json()["results"][0]["id"], created["id"])
 
 	def test_valid_legacy_post_is_mirrored(self):
 		response = self.client.post(
@@ -185,6 +221,7 @@ class GPSAPITests(TestCase):
 
 @override_settings(
 	SECRET_KEY="test-only-secret-key",
+	GPS_REQUIRE_API_AUTH=True,
 	GPS_DEVICE_API_TOKEN="",
 )
 class GPSAPIConfigurationTests(TestCase):
@@ -195,3 +232,20 @@ class GPSAPIConfigurationTests(TestCase):
 			content_type="application/json",
 		)
 		self.assertEqual(response.status_code, 503)
+
+
+@override_settings(
+	SECRET_KEY="test-only-secret-key",
+	GPS_REQUIRE_API_AUTH=False,
+	GPS_DEVICE_API_TOKEN="",
+	GPS_MANAGEMENT_API_TOKEN="",
+)
+class GPSAPIWithoutAuthenticationTests(TestCase):
+	def test_history_api_works_without_token(self):
+		response = self.client.get(
+			reverse("gps_readings"),
+			{"device_id": "GPS-PROTOTYPE-001"},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.json()["results"], [])

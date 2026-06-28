@@ -45,6 +45,8 @@ def _bearer_token_is_valid(request: HttpRequest, expected_token: str) -> bool:
 
 
 def _authenticate(request: HttpRequest, expected_token: str, label: str):
+	if not settings.GPS_REQUIRE_API_AUTH:
+		return None
 	if not expected_token:
 		return _json_error(f"{label} API token is not configured", 503)
 	if not _bearer_token_is_valid(request, expected_token):
@@ -131,9 +133,11 @@ def _coordinates_from_payload(payload: dict):
 
 
 def _validate_gps_payload(payload: dict):
-	device_id = str(payload.get("device_id", "")).strip()
+	device_id = str(
+		payload.get("device_id") or settings.GPS_PROTOTYPE_DEVICE_ID
+	).strip()
 	if not device_id:
-		raise ValueError("device_id is required")
+		raise ValueError("GPS_PROTOTYPE_DEVICE_ID is not configured")
 	if len(device_id) > 50:
 		raise ValueError("device_id cannot exceed 50 characters")
 	if payload.get("gps_fix") is not True:
@@ -350,9 +354,11 @@ def gps_readings(request: HttpRequest):
 		if error:
 			return error
 
-		device_id = request.GET.get("device_id", "").strip()
+		device_id = (
+			request.GET.get("device_id") or settings.GPS_PROTOTYPE_DEVICE_ID
+		).strip()
 		if not device_id:
-			return _json_error("device_id is required", 400)
+			return _json_error("GPS_PROTOTYPE_DEVICE_ID is not configured", 500)
 		try:
 			after_id = int(request.GET.get("after_id", "0"))
 			limit = int(request.GET.get("limit", "100"))
@@ -396,9 +402,11 @@ def gps_latest(request: HttpRequest):
 	if error:
 		return error
 
-	device_id = request.GET.get("device_id", "").strip()
+	device_id = (
+		request.GET.get("device_id") or settings.GPS_PROTOTYPE_DEVICE_ID
+	).strip()
 	if not device_id:
-		return _json_error("device_id is required", 400)
+		return _json_error("GPS_PROTOTYPE_DEVICE_ID is not configured", 500)
 	reading = (
 		GPSReading.objects.filter(device_id=device_id, gps_fix=True)
 		.order_by("-id")
