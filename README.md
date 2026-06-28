@@ -2,6 +2,8 @@
 
 This Django service receives raw prototype sensor data and exposes an authenticated, structured GPS API for the WOSAC container management system.
 
+The application timezone is `Africa/Dar_es_Salaam` (East Africa Time, UTC+3).
+
 ## Endpoints
 
 | Method | URL | Purpose | Authentication |
