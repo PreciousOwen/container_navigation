@@ -5,6 +5,7 @@ variables (see README).
 """
 
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -17,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in {"1", "true", "yes", "on"}
 
-if DEBUG and not SECRET_KEY:
+if (DEBUG or "test" in sys.argv) and not SECRET_KEY:
     SECRET_KEY = "django-insecure-dev-only-change-me"
 
 ALLOWED_HOSTS = [
@@ -143,3 +144,25 @@ if not DEBUG:
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# GPS API secrets must be supplied through the deployment environment. The API
+# fails closed when either token is empty.
+GPS_DEVICE_API_TOKEN = os.environ.get("GPS_DEVICE_API_TOKEN", "")
+GPS_MANAGEMENT_API_TOKEN = os.environ.get("GPS_MANAGEMENT_API_TOKEN", "")
+GPS_PROTOTYPE_DEVICE_ID = os.environ.get(
+    "GPS_PROTOTYPE_DEVICE_ID", "GPS-PROTOTYPE-001"
+)
+
+# While enabled, valid {"gps_location": "lat,lon"} payloads posted to the old
+# /sensor_data/ endpoint are mirrored into GPSReading. Disable after firmware
+# has moved to /api/v1/gps/readings/ with bearer authentication.
+GPS_LEGACY_INGEST_ENABLED = os.environ.get(
+    "GPS_LEGACY_INGEST_ENABLED", "True"
+).lower() in {"1", "true", "yes", "on"}
+
+GPS_DEVICE_RATE_LIMIT_PER_MINUTE = int(
+    os.environ.get("GPS_DEVICE_RATE_LIMIT_PER_MINUTE", "120")
+)
+GPS_MANAGEMENT_RATE_LIMIT_PER_MINUTE = int(
+    os.environ.get("GPS_MANAGEMENT_RATE_LIMIT_PER_MINUTE", "300")
+)

@@ -38,6 +38,12 @@ DJANGO_SQLITE_PATH=db.sqlite3
 
 # REQUIRED in production:
 DJANGO_SECRET_KEY=CHANGE_ME_TO_A_LONG_RANDOM_VALUE
+GPS_DEVICE_API_TOKEN=CHANGE_ME_DEVICE_TOKEN
+GPS_MANAGEMENT_API_TOKEN=CHANGE_ME_MANAGEMENT_TOKEN
+GPS_PROTOTYPE_DEVICE_ID=GPS-PROTOTYPE-001
+GPS_LEGACY_INGEST_ENABLED=True
+GPS_DEVICE_RATE_LIMIT_PER_MINUTE=120
+GPS_MANAGEMENT_RATE_LIMIT_PER_MINUTE=300
 EOF
 sudo chmod 600 /etc/daudi/daudi.env
 sudo chown root:root /etc/daudi/daudi.env
@@ -62,7 +68,7 @@ sudo systemctl reload nginx
 cat <<EOF
 
 Next steps:
-1) Edit /etc/daudi/daudi.env and set DJANGO_SECRET_KEY.
+1) Edit /etc/daudi/daudi.env and set DJANGO_SECRET_KEY plus both GPS API tokens.
 2) Ensure DNS for $DOMAIN points to this server.
 3) Install TLS cert (recommended):
    sudo snap install --classic certbot || sudo apt-get install -y certbot python3-certbot-nginx
@@ -70,6 +76,9 @@ Next steps:
 
 Test locally on the server:
   curl -X POST http://127.0.0.1:8001/sensor_data/ -H 'Content-Type: application/json' -d '{"sensor_id":"A1","temperature":23.4}'
+
+Test the authenticated GPS endpoint after replacing DEVICE_SECRET:
+  curl -X POST http://127.0.0.1:8001/api/v1/gps/readings/ -H 'Content-Type: application/json' -H 'Authorization: Bearer DEVICE_SECRET' -d '{"device_id":"GPS-PROTOTYPE-001","latitude":-6.783814,"longitude":39.198997,"recorded_at":"2026-06-28T11:20:00Z","gps_fix":true,"sequence_number":1}'
 
 Then test externally:
   https://$DOMAIN/sensor_data/

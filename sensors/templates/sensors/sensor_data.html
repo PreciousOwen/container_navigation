@@ -5,11 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Sensor Data</title>
     <style>
-      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; color: #172033; }
       header { margin-bottom: 16px; }
       .meta { color: #555; }
       .entry { border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin: 12px 0; }
       pre { margin: 10px 0 0; white-space: pre-wrap; word-break: break-word; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0 28px; }
+      th, td { border-bottom: 1px solid #ddd; padding: 9px 10px; text-align: left; }
+      th { background: #f4f6f9; }
+      .status { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 0.85rem; }
+      .enabled { background: #dcfce7; color: #166534; }
+      .disabled { background: #fee2e2; color: #991b1b; }
+      code { word-break: break-word; }
     </style>
   </head>
   <body>
@@ -18,13 +25,53 @@
       <div class="meta">
         Showing latest {{ entries|length }} entries. POST JSON to <code>/sensor_data/</code>.
       </div>
+      <div class="meta">
+        Legacy GPS mirroring:
+        {% if legacy_ingest_enabled %}
+          <span class="status enabled">Enabled</span>
+        {% else %}
+          <span class="status disabled">Disabled</span>
+        {% endif %}
+      </div>
     </header>
+
+    <h2>Latest Valid GPS Readings</h2>
+    {% if gps_readings %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Device</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>GPS time</th>
+            <th>Received</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reading in gps_readings %}
+            <tr>
+              <td>{{ reading.id }}</td>
+              <td>{{ reading.device_id }}</td>
+              <td>{{ reading.latitude }}</td>
+              <td>{{ reading.longitude }}</td>
+              <td>{{ reading.recorded_at|date:"Y-m-d H:i:s T" }}</td>
+              <td>{{ reading.received_at|date:"Y-m-d H:i:s T" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No valid GPS readings received yet.</p>
+    {% endif %}
+
+    <h2>Raw Sensor Data</h2>
 
     {% if entries %}
       {% for e in entries %}
         <section class="entry">
           <div><strong>ID:</strong> {{ e.id }}</div>
-          <div><strong>Received:</strong> {{ e.received_at }}</div>
+          <div><strong>Received:</strong> {{ e.received_at|date:"Y-m-d H:i:s T" }}</div>
           <pre>{{ e.payload_pretty }}</pre>
         </section>
       {% endfor %}
