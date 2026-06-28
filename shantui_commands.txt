@@ -1,0 +1,4 @@
+scp -i shantui_server.pem .venv.zip ec2-user@16.171.172.153:~
+scp -i shantui_server.pem shantui.sql bigbang.zip ec2-user@16.171.172.153:~
+scp -i shantui_server.pem footer-logo.png ec2-user@16.171.172.153:~
+scp -i shantui_server.pem base_site.html ec2-user@16.171.172.153:~

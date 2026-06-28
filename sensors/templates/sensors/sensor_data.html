@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sensor Data</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+      header { margin-bottom: 16px; }
+      .meta { color: #555; }
+      .entry { border: 1px solid #ddd; border-radius: 8px; padding: 12px 14px; margin: 12px 0; }
+      pre { margin: 10px 0 0; white-space: pre-wrap; word-break: break-word; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Sensor Data</h1>
+      <div class="meta">
+        Showing latest {{ entries|length }} entries. POST JSON to <code>/sensor_data/</code>.
+      </div>
+    </header>
+
+    {% if entries %}
+      {% for e in entries %}
+        <section class="entry">
+          <div><strong>ID:</strong> {{ e.id }}</div>
+          <div><strong>Received:</strong> {{ e.received_at }}</div>
+          <pre>{{ e.payload_pretty }}</pre>
+        </section>
+      {% endfor %}
+    {% else %}
+      <p>No sensor data received yet.</p>
+    {% endif %}
+  </body>
+</html>

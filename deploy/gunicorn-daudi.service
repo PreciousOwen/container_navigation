@@ -1,0 +1,29 @@
+# Example systemd unit for running Gunicorn for this project.
+# Save as: /etc/systemd/system/gunicorn-daudi.service
+
+[Unit]
+Description=Gunicorn for daudi_project
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/daudi
+
+# Environment variables live here (create it on the server).
+EnvironmentFile=/etc/daudi/daudi.env
+
+# Ensure venv exists at /home/ubuntu/daudi/.venv
+ExecStart=/home/ubuntu/daudi/.venv/bin/gunicorn \
+  --workers 2 \
+  --bind 127.0.0.1:8001 \
+  --access-logfile - \
+  --error-logfile - \
+  daudi_project.wsgi:application
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
