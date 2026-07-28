@@ -27,5 +27,6 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["-received_at"],
             },
+            
         ),
     ]
